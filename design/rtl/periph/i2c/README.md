@@ -147,8 +147,9 @@ void i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t data)
     // Assuming instruction memory at 0x0000_0000
     // Program: START | DEV_ADDR<<1 | SEND reg_addr | SEND data | STOP
 
-    // Write clock divider (optional, default is fast)
-    I2C_CKCNT = 0xFFF;  // Maximum speed
+    // Write clock divider (optional)
+    // Lower CKCOUNT -> faster SCL, higher CKCOUNT -> slower SCL
+    I2C_CKCNT = 0x040;  // Example divider value
 
     // Write instruction memory (implementation-specific)
     // Instructions:
@@ -401,11 +402,11 @@ axili2ccpu #(
 - **System Clock**: `S_AXI_ACLK` drives all logic including I2C bit timing
 - **I2C Clock**: Generated internally using programmable divider
   - Bit clock = `S_AXI_ACLK / (2 * CKCOUNT)`
-  - Default CKCOUNT = 0xFFF (maximum period)
+  - Default CKCOUNT = 0xFFF (slowest default SCL)
 
 ### Reset Strategy
 
-The peripheral uses active-low asynchronous reset (`S_AXI_ARESETN`).
+The peripheral uses active-low reset input (`S_AXI_ARESETN`) sampled in clocked logic (`S_AXI_ACLK`).
 
 **Recommended Reset Sequence:**
 1. Assert system reset (S_AXI_ARESETN = 0)
@@ -441,6 +442,16 @@ design/rtl/periph/i2c/
 ├── lli2cm.v        # Low-level Wishbone I2C master
 ├── tb_axili2ccpu.v # Testbench
 └── README.md       # This file
+```
+
+## Running the Local Testbench
+
+This directory contains `tb_axili2ccpu.v` for quick sanity simulation.
+
+```bash
+cd design/rtl/periph/i2c
+iverilog -g2012 -o tb_axili2ccpu.vvp axilfetch.v axisi2c.v lli2cm.v axili2ccpu.v tb_axili2ccpu.v
+vvp tb_axili2ccpu.vvp
 ```
 
 ## Version History

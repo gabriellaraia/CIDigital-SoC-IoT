@@ -1,17 +1,49 @@
-Este repositório contém um Testbench avançado em Verilog (tb_soc_uart_full.v) desenvolvido para validar a integração de um processador RISC-V com um periférico UART Lite através de um barramento AXI4.
-O Testbench simula todo o ambiente externo ao chip: memória RAM, clock, reset e um monitor serial virtual.
-O código base se encontra em https://github.com/ultraembedded/riscv_soc/tree/master
+# UART Peripheral Testbench
 
-✨ Principais Funcionalidades
-1 Gerador de Firmware Dinâmico (Assembly Injection):
- - Converte automaticamente uma string de texto (ex: "Ola Mundo") em instruções de máquina RISC-V.
- - Preenche a memória RAM simulada.
- - Gera um arquivo firmware.hex como backup.
-2 Carregador de Arquivos HEX:
- - Capacidade de carregar programas compilados externamente (GCC/Assembly) via arquivo .hex.
-3 Simulação de RAM AXI4:
- - Atua como um Slave AXI4, respondendo a requisições de leitura de instruções (Instruction Fetch) do processador.
-4 Monitor Serial Inteligente:
- - Decodifica os sinais físicos do pino TX da UART.
- - Reconstrói os bytes enviados e exibe no console do simulador.
- - Possui modo "Tempo Real" ou "Bufferizado".
+## Overview
+
+This directory contains a SoC-level UART integration testbench, not a standalone UART unit test.
+
+## Files
+
+- `TB_SOC_UART_FULL.v` (main testbench)
+
+Note: file names are case-sensitive on Linux. Use `TB_SOC_UART_FULL.v` (not `tb_soc_uart_full.v`).
+
+## Testbench Coverage
+
+- RISC-V CPU and UART integration over AXI bus transactions
+- Simulated instruction/data memory behavior
+- Firmware loading from generated or external HEX files
+- Virtual serial monitor decoding UART TX output
+
+## Key Capabilities
+
+1. **Dynamic firmware generation**
+   - Converts text payloads (for example, "Ola Mundo") into RISC-V machine words
+   - Initializes simulated RAM
+   - Emits `firmware.hex` for debug and replay
+
+2. **External HEX program loading**
+   - Runs prebuilt firmware images produced outside this testbench
+
+3. **AXI memory model behavior**
+   - Serves instruction fetch reads from the simulated memory subsystem
+
+4. **UART TX monitor**
+   - Reconstructs outgoing bytes from TX signaling
+   - Prints decoded output to simulator console
+
+## Running the Local Testbench
+
+```bash
+cd design/rtl/periph/uart
+iverilog -g2012 -o tb_uart.vvp TB_SOC_UART_FULL.v
+vvp tb_uart.vvp
+```
+
+If your setup requires external RTL dependencies, add the required source files and include directories (`-I...`) to the compile command.
+
+## Reference
+
+- `https://github.com/ultraembedded/riscv_soc/tree/master`

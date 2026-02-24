@@ -299,7 +299,7 @@ A comprehensive testbench is available in the `tb/` directory with the following
 9. **Combined Scaling** - Prescaler + postscaler together
 10. **Manual Counter Load** - Loading arbitrary counter values
 
-### Running Tests
+### Running the Local Testbench
 
 ```bash
 cd tb

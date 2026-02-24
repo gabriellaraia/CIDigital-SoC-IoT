@@ -118,6 +118,16 @@ if (status & 0x1) {
 | OPT_SKIDBUFFER | 1'b1 | Enable skid buffer for 100% throughput |
 | OPT_LOWPOWER | 0 | Enable low power optimizations |
 
+## Running the Local Testbench
+
+This directory includes `tb_axilgpio.v` for quick functional checks.
+
+```bash
+cd design/rtl/periph/gpio
+iverilog -g2012 -o tb_axilgpio.vvp axilgpio.v skidbuffer.v tb_axilgpio.v
+vvp tb_axilgpio.vvp
+```
+
 ## File Structure
 
 ```

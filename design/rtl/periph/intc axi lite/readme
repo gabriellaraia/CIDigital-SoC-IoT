@@ -1,1 +1,72 @@
+# AXI-Lite Interrupt Controller (INTC)
 
+This directory integrates a simple programmable interrupt controller (PIC) behind an AXI4-Lite slave interface.
+
+## Overview
+
+The interrupt controller is built from three RTL blocks:
+
+- `intc_axilite.v`: top wrapper and integration point
+- `axlite2wbsp.v`: AXI4-Lite to Wishbone bridge
+- `simple_pic.v`: 8-bit programmable interrupt controller core
+
+The software-facing bus is AXI4-Lite, while the PIC core itself is controlled through a small Wishbone-style register bank.
+
+## Interrupt Model
+
+- Up to `is` interrupt sources (`irq[is:1]`, default `is=8`)
+- Per-source configuration:
+  - edge or level trigger
+  - polarity (high/rising or low/falling)
+  - mask enable/disable
+- Pending bits are sticky and cleared with write-1-to-clear (W1C)
+
+CPU interrupt is asserted when any pending interrupt is unmasked.
+
+## Register Map
+
+The core exposes 4 logical registers selected by address bits `[2:1]`.
+
+| Address Select | Name | Access | Description |
+|---|---|---|---|
+| `2'b00` | EDGE_ENABLE | R/W | `1` edge-triggered, `0` level-triggered |
+| `2'b01` | POLARITY | R/W | `1` high/rising, `0` low/falling |
+| `2'b10` | MASK | R/W | `1` masked, `0` enabled |
+| `2'b11` | PENDING | R/W1C | pending status, write `1` to clear bit |
+
+Notes:
+
+- Only the least-significant `is` bits are used.
+- AXI accesses are 32-bit, but only the low byte is consumed by `simple_pic.v`.
+
+## Reset Behavior
+
+`i_axi_reset_n` is active-low and is passed into `simple_pic` reset.
+
+After reset:
+
+- `MASK = all 1s` (all interrupts disabled)
+- `EDGE_ENABLE = 0`
+- `POLARITY = 0`
+- `PENDING = 0`
+
+## Integration Notes
+
+- Current `intc_axilite.v` computes `int_o` internally but does not expose it as a top-level output pin.
+- If SoC integration needs the interrupt line, add an output port in `intc_axilite.v` and connect it to the internal `int_o` signal.
+
+## Running Local Checks
+
+There is no dedicated testbench in this directory. For quick syntax and lint sanity checks:
+
+```bash
+cd design/rtl/periph/intc\ axi\ lite
+iverilog -g2012 -o /dev/null intc_axilite.v axlite2wbsp.v simple_pic.v
+verilator --lint-only -Wall intc_axilite.v
+```
+
+## Files
+
+- `intc_axilite.v`
+- `axlite2wbsp.v`
+- `simple_pic.v`

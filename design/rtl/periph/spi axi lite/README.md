@@ -13,7 +13,7 @@ A lightweight AXI4-Lite compliant SPI master controller designed for SoC integra
 - **Configurable Bit Order**: MSB-first or LSB-first transmission
 - **Loopback Mode**: Internal loopback for testing
 - **Interrupt Support**: TX FIFO empty interrupt with masking
-- **Software Reset**: Full peripheral reset via register
+- **Software Reset**: Transfer/FIFO reset via register write
 
 ## Register Map
 
@@ -58,7 +58,7 @@ All registers are 32-bit wide. Only the lower 8 bits of the data bus are used fo
 
 | Bit | Field | Default | Access | Description |
 |-----|-------|---------|--------|-------------|
-| 31:0 | RESET | 0 | W | Write 0x0000000A to reset the entire SPI peripheral. Auto-clears after write. |
+| 31:0 | RESET | 0 | W | Write `0x0000000A` to flush SPI transfer state and FIFOs. Auto-clears after write. |
 
 ### SPI_CR - Control Register (Offset: 0x60)
 
@@ -111,7 +111,7 @@ All registers are 32-bit wide. Only the lower 8 bits of the data bus are used fo
 
 | Bit | Field | Default | Access | Description |
 |-----|-------|---------|--------|-------------|
-| 7:0 | VALUE | 0xFF | R/W | Slave Select Value. Active-low chip select outputs. Bit 0 = CS0, Bit 1 = CS1, etc. |
+| 7:0 | VALUE | 0x01 | R/W | Slave Select Value. Active-low chip select outputs. Bit 0 = CS0, Bit 1 = CS1, etc. |
 | 31:8 | - | 0 | - | Reserved |
 
 ## Usage Guide
@@ -275,13 +275,13 @@ spi_lite #(
 
 ### Reset Strategy
 
-The peripheral uses active-high synchronous reset (`rst_i`). All registers reset to 0 (or default values as specified in register descriptions).
+The peripheral uses active-high synchronous reset (`rst_i`). Registers reset to defaults from `spi_lite_defs.v` (for example, `SPI_SSR = 0x01`).
 
 **Recommended Reset Sequence:**
 1. Assert system reset
 2. Wait for clock cycles
 3. Deassert reset
-4. Write 0x0000000A to SPI_SRR for software reset (optional)
+4. Optionally write `0x0000000A` to `SPI_SRR` to flush transfer/FIFO state
 5. Configure SPI_CR before use
 
 ### Timing Considerations
@@ -312,6 +312,17 @@ design/rtl/periph/spi axi lite/
 ├── spi_lite.v         # Main module with FIFO implementation
 ├── spi_lite_defs.v    # Register address and bit definitions
 └── README.md          # This file
+```
+
+## Running the Local Testbench
+
+Use the testbench under `tb/`:
+
+```bash
+cd design/rtl/periph/spi\ axi\ lite/tb
+make compile
+make run
+make lint
 ```
 
 ## Version History
