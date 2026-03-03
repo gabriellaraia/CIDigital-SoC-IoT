@@ -429,6 +429,59 @@ module soc_top #(
     // Vetor de Interrupções
     // Organizado sequencialmente: GPIO(0), Timer(1), UART(2), SPI(3), I2C(4)
     // -------------------------------------------------------------------------
+    // Instância do Ultra-Embedded IRQ Controller (Customizado para 5 IRQs)
+    irq_ctrl u_intc (
+        .clk_i          (aclk),
+        .rst_i          (!aresetn),      // Inversão: SoC (Baixo) -> Módulo (Alto) 
+
+        // Entradas de Interrupção Mapeadas
+        .interrupt0_i   (gpio_irq),      // Bit 0
+        .interrupt1_i   (timer_irq),     // Bit 1
+        .interrupt2_i   (uart_irq),      // Bit 2
+        .interrupt3_i   (spi_irq),       // Bit 3
+        .interrupt4_i   (i2c_irq),       // Bit 4
+
+        // Interface AXI-Lite [cite: 58, 62]
+        .cfg_awvalid_i  (axi_intc_awvalid),
+        .cfg_awaddr_i   (axi_intc_awaddr),
+        .cfg_awready_o  (axi_intc_awready),
+        .cfg_wvalid_i   (axi_intc_wvalid),
+        .cfg_wdata_i    (axi_intc_wdata),
+        .cfg_wstrb_i    (axi_intc_wstrb),
+        .cfg_wready_o   (axi_intc_wready),
+        .cfg_bvalid_o   (axi_intc_bvalid),
+        .cfg_bready_i   (axi_intc_bready),
+        .cfg_bresp_o    (axi_intc_bresp),
+        .cfg_arvalid_i  (axi_intc_arvalid),
+        .cfg_araddr_i   (axi_intc_araddr),
+        .cfg_arready_o  (axi_intc_arready),
+        .cfg_rvalid_o   (axi_intc_rvalid),
+        .cfg_rdata_o    (axi_intc_rdata),
+        .cfg_rresp_o    (axi_intc_rresp),
+        .cfg_rready_i   (axi_intc_rready),
+
+        // Saída Global 
+        .intr_o         (cpu_global_irq)
+    );
+
+    // BOOT control / CPU reset gating
+    // Boot domina o barramento somente enquanto estiver copiando.
+    assign boot_active = boot_pin & ~boot_done;
+    // CPU fica em reset enquanto o boot está copiando.
+    // - Se boot_pin=0: CPU roda normal.
+    // - Se boot_pin=1: CPU só sai do reset quando boot_done=1.
+    assign cpu_resetn = aresetn & (~boot_pin | boot_done);
+
+endmodule
+
+
+
+/*
+    // INTERRUPT CONTROLLER (Porta 5 - Base 0x4000_5000)
+
+    // Vetor de Interrupções
+    // Organizado sequencialmente: GPIO(0), Timer(1), UART(2), SPI(3), I2C(4)
+    // -------------------------------------------------------------------------
     assign irq_sources = {
         i2c_irq,     // Bit 4: I2C
         spi_irq,     // Bit 3: SPI
@@ -454,13 +507,4 @@ module soc_top #(
         .irq_inputs_i  (irq_sources),
         .irq_output_o  (cpu_global_irq)
     );
-
-    // BOOT control / CPU reset gating
-    // Boot domina o barramento somente enquanto estiver copiando.
-    assign boot_active = boot_pin & ~boot_done;
-    // CPU fica em reset enquanto o boot está copiando.
-    // - Se boot_pin=0: CPU roda normal.
-    // - Se boot_pin=1: CPU só sai do reset quando boot_done=1.
-    assign cpu_resetn = aresetn & (~boot_pin | boot_done);
-
-endmodule
+*/
